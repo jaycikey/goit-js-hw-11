@@ -2,7 +2,7 @@
 import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import { fetchImages, perPage } from './apiService.js'; // Імпорт perPage
+import { fetchImages, perPage } from './apiService.js';
 
 const form = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
@@ -10,8 +10,8 @@ const loadMoreBtn = document.getElementById('loadMore');
 let currentPage = 1;
 let searchQuery = '';
 let totalHits = 0;
+let endOfResultsReached = false;
 
-// Функція для створення HTML розмітки однієї картки
 function createCardMarkup({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) {
     return `
         <div class="photo-card">
@@ -28,28 +28,28 @@ function createCardMarkup({ webformatURL, largeImageURL, tags, likes, views, com
     `;
 }
 
-// Очищення галереї
-function clearGallery() {
-    gallery.innerHTML = '';
-}
-
-// Оновлення HTML розмітки галереї
 function updateGalleryMarkup(images) {
     const markup = images.map(createCardMarkup).join('');
     gallery.insertAdjacentHTML('beforeend', markup);
     new SimpleLightbox('.gallery a').refresh();
 }
 
-// Управління видимістю кнопки "Load more"
+function clearGallery() {
+    gallery.innerHTML = '';
+    endOfResultsReached = false;
+}
+
 function handleLoadMoreVisibility() {
-    if (currentPage * perPage < totalHits) {
+    if (currentPage * perPage < totalHits && !endOfResultsReached) {
         loadMoreBtn.classList.remove('isHidden');
     } else {
         loadMoreBtn.classList.add('isHidden');
+        if (endOfResultsReached) {
+            Notiflix.Notify.info('Ви досягли кінця списку.');
+        }
     }
 }
 
-// Обробка події відправки форми
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     searchQuery = e.currentTarget.elements.searchQuery.value.trim();
@@ -61,6 +61,8 @@ form.addEventListener('submit', async (e) => {
 
     clearGallery();
     currentPage = 1;
+    endOfResultsReached = false;
+
     try {
         const data = await fetchImages(searchQuery, currentPage);
 
@@ -79,17 +81,26 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
-// Обробка події натискання кнопки "Load more"
 loadMoreBtn.addEventListener('click', async () => {
+    if (endOfResultsReached) return;
+
     currentPage += 1;
+
     try {
         const data = await fetchImages(searchQuery, currentPage);
-        updateGalleryMarkup(data.hits);
-        handleLoadMoreVisibility();
-    } catch (error) {
-        Notiflix.Notify.failure('Помилка при запиті даних: ' + error.message);
-    }
+
+        if (data.hits.length === 0) {
+            endOfResultsReached = true;
+handleLoadMoreVisibility();
+return;
+}
+
+    updateGalleryMarkup(data.hits);
+    handleLoadMoreVisibility();
+} catch (error) {
+    Notiflix.Notify.failure('Помилка при запиті даних: ' + error.message);
+}
+
 });
 
-// Початкове приховування кнопки "Load more"
-loadMoreBtn.classList.add('isHidden');
+loadMoreBtn.classList.add(‘isHidden’);
