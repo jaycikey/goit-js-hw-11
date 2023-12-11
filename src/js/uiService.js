@@ -83,7 +83,7 @@ loadMoreBtn.addEventListener('click', async () => {
         const data = await fetchImages(searchQuery, currentPage);
 
         if(data.hits.length === 0) {
-Notiflix.Notify.info(“Ви досягли кінця списку.”);
+Notiflix.Notify.info('Ви досягли кінця списку.');
 return;
 }
 
