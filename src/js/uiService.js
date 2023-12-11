@@ -10,7 +10,6 @@ const loadMoreBtn = document.getElementById('loadMore');
 let currentPage = 1;
 let searchQuery = '';
 let totalHits = 0;
-let endOfResultsReached = false;
 
 function createCardMarkup({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) {
     return `
@@ -24,8 +23,7 @@ function createCardMarkup({ webformatURL, largeImageURL, tags, likes, views, com
                 <p class="info-item"><b>Comments</b> ${comments}</p>
                 <p class="info-item"><b>Downloads</b> ${downloads}</p>
             </div>
-        </div>
-    `;
+        </div>`;
 }
 
 function updateGalleryMarkup(images) {
@@ -36,17 +34,16 @@ function updateGalleryMarkup(images) {
 
 function clearGallery() {
     gallery.innerHTML = '';
-    endOfResultsReached = false;
 }
 
 function handleLoadMoreVisibility() {
-    if (currentPage * perPage < totalHits && !endOfResultsReached) {
-        loadMoreBtn.classList.remove('isHidden');
-    } else {
+    if (currentPage * perPage >= totalHits) {
         loadMoreBtn.classList.add('isHidden');
-        if (endOfResultsReached) {
-            Notiflix.Notify.info('Ви досягли кінця списку.');
+        if (totalHits > 0) {
+            Notiflix.Notify.info("Ви досягли кінця списку.");
         }
+    } else {
+        loadMoreBtn.classList.remove('isHidden');
     }
 }
 
@@ -61,18 +58,16 @@ form.addEventListener('submit', async (e) => {
 
     clearGallery();
     currentPage = 1;
-    endOfResultsReached = false;
 
     try {
         const data = await fetchImages(searchQuery, currentPage);
+        totalHits = data.totalHits;
 
         if (data.hits.length === 0) {
             Notiflix.Notify.failure('На жаль, за вашим запитом зображень не знайдено. Спробуйте ще раз.');
-            loadMoreBtn.classList.add('isHidden');
             return;
         }
 
-        totalHits = data.totalHits;
         Notiflix.Notify.success(`Ура! Ми знайшли ${totalHits} зображень.`);
         updateGalleryMarkup(data.hits);
         handleLoadMoreVisibility();
@@ -82,16 +77,13 @@ form.addEventListener('submit', async (e) => {
 });
 
 loadMoreBtn.addEventListener('click', async () => {
-    if (endOfResultsReached) return;
-
     currentPage += 1;
 
     try {
         const data = await fetchImages(searchQuery, currentPage);
 
-        if (data.hits.length === 0) {
-            endOfResultsReached = true;
-handleLoadMoreVisibility();
+        if(data.hits.length === 0) {
+Notiflix.Notify.info(“Ви досягли кінця списку.”);
 return;
 }
 
