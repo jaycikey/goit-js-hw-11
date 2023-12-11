@@ -95,4 +95,4 @@ return;
 
 });
 
-loadMoreBtn.classList.add(‘isHidden’);
+loadMoreBtn.classList.add('isHidden');
