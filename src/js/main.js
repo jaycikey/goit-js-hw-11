@@ -1,8 +1,9 @@
-// uiService.js
+// main.js
 import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import { fetchImages, perPage } from './apiService.js';
+import { createCardMarkup } from './markupService.js';
 
 const form = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
@@ -10,21 +11,6 @@ const loadMoreBtn = document.getElementById('loadMore');
 let currentPage = 1;
 let searchQuery = '';
 let totalHits = 0;
-
-function createCardMarkup({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) {
-    return `
-        <div class="photo-card">
-            <a href="${largeImageURL}">
-                <img src="${webformatURL}" alt="${tags}" loading="lazy" />
-            </a>
-            <div class="info">
-                <p class="info-item"><b>Likes</b> ${likes}</p>
-                <p class="info-item"><b>Views</b> ${views}</p>
-                <p class="info-item"><b>Comments</b> ${comments}</p>
-                <p class="info-item"><b>Downloads</b> ${downloads}</p>
-            </div>
-        </div>`;
-}
 
 function updateGalleryMarkup(images) {
     const markup = images.map(createCardMarkup).join('');
@@ -61,13 +47,14 @@ form.addEventListener('submit', async (e) => {
 
     try {
         const data = await fetchImages(searchQuery, currentPage);
-        totalHits = data.totalHits;
 
         if (data.hits.length === 0) {
             Notiflix.Notify.failure('На жаль, за вашим запитом зображень не знайдено. Спробуйте ще раз.');
+            loadMoreBtn.classList.add('isHidden');
             return;
         }
 
+        totalHits = data.totalHits;
         Notiflix.Notify.success(`Ура! Ми знайшли ${totalHits} зображень.`);
         updateGalleryMarkup(data.hits);
         handleLoadMoreVisibility();
@@ -81,18 +68,11 @@ loadMoreBtn.addEventListener('click', async () => {
 
     try {
         const data = await fetchImages(searchQuery, currentPage);
-
-        if(data.hits.length === 0) {
-Notiflix.Notify.info('Ви досягли кінця списку.');
-return;
-}
-
-    updateGalleryMarkup(data.hits);
-    handleLoadMoreVisibility();
-} catch (error) {
-    Notiflix.Notify.failure('Помилка при запиті даних: ' + error.message);
-}
-
+        updateGalleryMarkup(data.hits);
+        handleLoadMoreVisibility();
+    } catch (error) {
+        Notiflix.Notify.failure('Помилка при запиті даних: ' + error.message);
+    }
 });
 
 loadMoreBtn.classList.add('isHidden');
